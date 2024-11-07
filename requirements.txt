@@ -1,0 +1,12 @@
+fastapi~=0.115.4
+pydantic~=2.9.2
+pydantic[email]~=2.9.2
+SQLAlchemy[asyncio]~=2.0.36
+PyJWT~=2.9.0
+passlib~=1.7.4
+starlette~=0.41.2
+asyncpg~=0.30.0
+uvicorn~=0.32.0
+alembic~=1.13.3
+bcrypt~=4.2.0
+# uvloop~=0.21.0
