@@ -31,7 +31,7 @@ async def login(
 async def register(
         register_data: RegisterData,
         db_session: DBSessionDep
-):
+) -> Token:
     if await service.user_exists(db_session, register_data.email):
         raise UserAlreadyExists()
 
@@ -41,10 +41,9 @@ async def register(
 
 
 @router.get(
-    "/me",
-    response_model=UserScheme
+    "/me"
 )
 async def get_me(
         user: CurrentUserDep
-):
-    return UserScheme.from_orm(user)
+) -> UserScheme:
+    return user

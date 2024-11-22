@@ -22,7 +22,7 @@ class LoginData(BaseModel):
 
 class UserScheme(BaseModel):
     id: uuid.UUID
-    email: Optional[str]
+    email: EmailStr
 
     class Config:
         from_attributes = True
@@ -30,10 +30,8 @@ class UserScheme(BaseModel):
 
 class UserSchemeDetailed(BaseModel):
     id: uuid.UUID
-    email: Optional[str]
-    password: Optional[str]
+    email: EmailStr
+    password: str
 
     class Config:
         from_attributes = True
-    #     underscore_attrs_are_private = True
-    # todo make sure its ok

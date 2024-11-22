@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 # from jose import JWTError
 from src import config
 from src.auth.exceptions import UserDoesntExist, InvalidPassword
-from src.auth.schemas import RegisterData
+from src.auth.schemas import RegisterData, UserSchemeDetailed
 from src.database import get_db_session
 from src.exceptions import InvalidCredentials, TokenExpired
 from src.models import UserModel
@@ -25,7 +25,7 @@ oauth2_bearer = OAuth2PasswordBearer(
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
-def verify_password(plain_password, hashed_password):
+def verify_password(plain_password, hashed_password) -> bool:
     """
     Verify if the provided plain text password matches the hashed password.
     """
@@ -45,14 +45,14 @@ async def validate_user(db_session: AsyncSession, email: str, password: str) -> 
         raise InvalidPassword()
 
 
-async def get_user_by_id(db_session: AsyncSession, user_id: uuid.UUID) -> UserModel:
+async def get_user_by_id(db_session: AsyncSession, user_id: uuid.UUID) -> UserSchemeDetailed:
     user = (await db_session.scalars(select(UserModel).where(UserModel.id == user_id))).first()
     if not user:
         raise UserDoesntExist()
     return user
 
 
-async def get_user_by_email(db_session: AsyncSession, user_email: str) -> UserModel:
+async def get_user_by_email(db_session: AsyncSession, user_email: str) -> UserSchemeDetailed:
     user = (await db_session.scalars(select(UserModel).where(UserModel.email == user_email))).first()
     if not user:
         raise UserDoesntExist()
@@ -61,14 +61,14 @@ async def get_user_by_email(db_session: AsyncSession, user_email: str) -> UserMo
 
 def create_access_token(user_id: uuid.UUID, expiry_time: int = config.JWT_EXPIRY_TIME) -> str:
     to_encode = {"sub": str(user_id)}
-    expire = datetime.utcnow() + timedelta(minutes=expiry_time)
+    expire = datetime.now() + timedelta(minutes=expiry_time)
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, config.SECRET_KEY, algorithm=config.JWT_ALGORITHM)
     return encoded_jwt
 
 
 async def get_current_user(token: Annotated[str, Depends(oauth2_bearer)],
-                           db_session: AsyncSession = Depends(get_db_session)) -> UserModel:
+                           db_session: AsyncSession = Depends(get_db_session)) -> UserSchemeDetailed:
     try:
         payload = jwt.decode(token, config.SECRET_KEY, algorithms=[config.JWT_ALGORITHM])
         user_id = uuid.UUID(payload.get("sub"))
@@ -83,7 +83,7 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_bearer)],
         raise InvalidCredentials()
 
 
-async def create_user(db_session: AsyncSession, register_data: RegisterData) -> UserModel:
+async def create_user(db_session: AsyncSession, register_data: RegisterData) -> UserSchemeDetailed:
     db_user = UserModel(
         name=register_data.name,
         email=register_data.email,
