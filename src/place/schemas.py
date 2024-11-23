@@ -1,9 +1,9 @@
 import uuid
+from datetime import datetime
+from decimal import Decimal
 from typing import Literal
 
 from pydantic import BaseModel
-
-from src.schemas import PlaceScheme
 
 
 class ReactionData(BaseModel):
@@ -16,6 +16,30 @@ class SuccessResponse(BaseModel):
     message: str
 
 
+class PlaceTypeMin(BaseModel):
+    type: str
+
+
+class PlaceImageMin(BaseModel):
+    image_url: str
+
+
+class PlaceReactionMin(BaseModel):
+    reaction: Literal['like', 'dislike']
+    created_at: datetime
+
+
+class UserReaction(BaseModel):
+    id: uuid.UUID
+    place_id: str
+    latitude: Decimal
+    longitude: Decimal
+    created_at: datetime
+    types: list[PlaceTypeMin]
+    images: list[PlaceImageMin]
+    reactions: list[PlaceReactionMin]  # not always loaded
+
+
 class ReactionsList(BaseModel):
     success: bool
-    reactions: list[PlaceScheme]
+    reactions: list[UserReaction]
