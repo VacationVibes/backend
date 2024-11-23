@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 from decimal import Decimal
-from typing import Literal
+from typing import Literal, Optional
 
 from pydantic import BaseModel
 
@@ -37,7 +37,7 @@ class PlaceMin(BaseModel):
     created_at: datetime
     types: list[PlaceTypeMin]
     images: list[PlaceImageMin]
-    reactions: list[PlaceReactionMin]  # not always loaded
+    reactions: Optional[list[PlaceReactionMin]] = []  # not always loaded
 
 
 class ReactionsList(BaseModel):

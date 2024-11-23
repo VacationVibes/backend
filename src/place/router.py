@@ -25,16 +25,16 @@ async def reaction(
 
 @router.get(
     "/reactions",
-    response_model=ReactionsList
+    response_model=list[PlaceMin]
 )
 async def reaction(
         user: CurrentUserDep,
         db_session: DBSessionDep,
         offset: int = Query(0, ge=0),
         limit: int = Query(10, le=100)
-) -> ReactionsList:
+) -> list[PlaceScheme]:
     reactions = await service.get_user_reactions(db_session, user, offset, limit)
-    return ReactionsList(success=True, reactions=reactions)
+    return reactions
 
 
 @router.get(

@@ -23,7 +23,7 @@ async def add_reaction(db_session: AsyncSession, reaction_data: ReactionData, us
         raise InvalidPlaceException()
 
 
-async def get_user_reactions(db_session: AsyncSession, user: UserModel, offset: int, limit: int) -> list[PlaceMin]:
+async def get_user_reactions(db_session: AsyncSession, user: UserModel, offset: int, limit: int) -> list[PlaceScheme]:
     # SELECT place, place_reaction,
     #        array_agg(DISTINCT place_image) AS place_images,
     #        array_agg(DISTINCT place_type) AS place_types
@@ -57,29 +57,30 @@ async def get_user_reactions(db_session: AsyncSession, user: UserModel, offset: 
     places = result.fetchall()
 
     return [
-        PlaceMin(
+        PlaceScheme(
             id=place[0].id,
-            # place_id=place[0].place_id,
+            place_id=place[0].place_id,
             latitude=place[0].latitude,
             longitude=place[0].longitude,
             created_at=place[0].created_at,
-            reactions=[PlaceReactionMin(
+            reactions=[PlaceReactionScheme(
+                id=place[1].id,
                 reaction=place[1].reaction,
                 created_at=place[1].created_at
             )],
             images=[
-                PlaceImageMin(
-                    # place_id=image[0],
+                PlaceImageScheme(
+                    place_id=image[0],
                     image_url=image[1],
-                    # created_at=image[2],
+                    created_at=image[2],
                 )
                 for image in place[2]
             ],
             types=[
-                PlaceTypeMin(
-                    # place_id=type_[0],
+                PlaceTypeScheme(
+                    place_id=type_[0],
                     type=type_[1],
-                    # created_at=type_[2],
+                    created_at=type_[2],
                 )
                 for type_ in place[3]
             ],
