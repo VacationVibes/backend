@@ -51,8 +51,8 @@ class PlaceModel(Base):
     __tablename__ = 'place'
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     place_id = Column(String, nullable=False)
-    latitude = Column(DECIMAL(10, 9), nullable=False)
-    longitude = Column(DECIMAL(10, 9), nullable=False)
+    latitude = Column(DECIMAL(30, 20), nullable=False)
+    longitude = Column(DECIMAL(30, 20), nullable=False)
     name = Column(String, nullable=False)
     rating = Column(DECIMAL(2, 2), nullable=True)
     created_at = Column(TIMESTAMP, server_default=func.now(), nullable=False)
