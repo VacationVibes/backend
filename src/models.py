@@ -54,7 +54,7 @@ class PlaceModel(Base):
     latitude = Column(DECIMAL(30, 20), nullable=False)
     longitude = Column(DECIMAL(30, 20), nullable=False)
     name = Column(String, nullable=False)
-    rating = Column(DECIMAL(2, 2), nullable=True)
+    rating = Column(DECIMAL(3, 2), nullable=True)
     created_at = Column(TIMESTAMP, server_default=func.now(), nullable=False)
 
     reactions = relationship('PlaceReactionModel', back_populates='place', lazy='dynamic')
