@@ -1,5 +1,5 @@
-import sys
-import os
+# import sys
+# import os
 
 # sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
@@ -7,8 +7,6 @@ import logging
 import sys
 
 from fastapi import FastAPI
-from fastapi.exceptions import RequestValidationError
-from starlette.staticfiles import StaticFiles
 
 from src import config
 from src.auth.router import router as auth_router

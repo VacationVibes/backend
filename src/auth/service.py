@@ -1,4 +1,3 @@
-import traceback
 from datetime import datetime, timedelta
 
 import jwt
@@ -7,29 +6,30 @@ from fastapi import Depends
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-# from jose import JWTError
 from src import config
+from argon2 import PasswordHasher
 from src.auth.exceptions import UserDoesntExist, InvalidPassword
-from src.auth.schemas import RegisterData, UserSchemeDetailed
+from src.auth.schemas import RegisterData
 from src.database import get_db_session
 from src.exceptions import InvalidCredentials, TokenExpired
 from src.models import UserModel
-from passlib.context import CryptContext
 from typing import Annotated
+
+from src.schemas import UserSchemeDetailed
 
 oauth2_bearer = OAuth2PasswordBearer(
     tokenUrl="auth/login",
     scheme_name="JWT"
 )
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+ph = PasswordHasher()
 
 
 def verify_password(plain_password, hashed_password) -> bool:
     """
     Verify if the provided plain text password matches the hashed password.
     """
-    return pwd_context.verify(plain_password, hashed_password)
+    return ph.verify(hashed_password, plain_password)
 
 
 async def user_exists(db_session: AsyncSession, email: str) -> bool:
@@ -87,7 +87,7 @@ async def create_user(db_session: AsyncSession, register_data: RegisterData) -> 
     db_user = UserModel(
         name=register_data.name,
         email=register_data.email,
-        password=pwd_context.hash(register_data.password)
+        password=ph.hash(register_data.password)
     )
     db_session.add(db_user)
     await db_session.commit()

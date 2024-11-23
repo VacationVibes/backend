@@ -1,13 +1,11 @@
 from fastapi import APIRouter
 
 from src.auth.dependencies import CurrentUserDep
-from src.auth.schemas import RegisterData, LoginData, Token, UserScheme
+from src.auth.schemas import RegisterData, LoginData, Token
 from src.auth.exceptions import UserAlreadyExists
-from src import config
 from src.auth import service
 from src.database import DBSessionDep
-from src.exceptions import InvalidCredentials
-import asyncio
+from src.schemas import UserScheme
 
 router = APIRouter()
 

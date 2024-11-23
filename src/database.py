@@ -1,5 +1,5 @@
 import contextlib
-from typing import Any, AsyncIterator
+from typing import AsyncIterator
 
 from sqlalchemy.ext.asyncio import (
     AsyncConnection,
