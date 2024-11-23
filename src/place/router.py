@@ -5,6 +5,7 @@ from src.place import service
 from src.database import DBSessionDep
 
 from src.place.schemas import ReactionData, SuccessResponse, ReactionsList
+from src.schemas import PlaceScheme
 
 router = APIRouter()
 
@@ -34,3 +35,15 @@ async def reaction(
 ) -> ReactionsList:
     reactions = await service.get_user_reactions(db_session, user, offset, limit)
     return ReactionsList(success=True, reactions=reactions)
+
+
+@router.get(
+    "/feed",
+    response_model=list[PlaceScheme]
+)
+async def reaction(
+        user: CurrentUserDep,
+        db_session: DBSessionDep
+) -> list[PlaceScheme]:
+    feed = await service.get_user_feed(db_session, user)
+    return feed

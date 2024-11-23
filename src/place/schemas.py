@@ -3,7 +3,7 @@ from typing import Literal
 
 from pydantic import BaseModel
 
-from src.schemas import PlaceReactionScheme
+from src.schemas import PlaceScheme
 
 
 class ReactionData(BaseModel):
@@ -18,4 +18,4 @@ class SuccessResponse(BaseModel):
 
 class ReactionsList(BaseModel):
     success: bool
-    reactions: list[PlaceReactionScheme]
+    reactions: list[PlaceScheme]

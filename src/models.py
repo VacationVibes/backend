@@ -1,6 +1,5 @@
 import uuid
-from sqlalchemy import Column, Integer, String, Boolean, DECIMAL, ForeignKey, CheckConstraint, TIMESTAMP, func, \
-    PrimaryKeyConstraint
+from sqlalchemy import Column, String, DECIMAL, ForeignKey, CheckConstraint, TIMESTAMP, func, PrimaryKeyConstraint
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import UUID
 
@@ -57,7 +56,7 @@ class PlaceModel(Base):
     rating = Column(DECIMAL(3, 2), nullable=True)
     created_at = Column(TIMESTAMP, server_default=func.now(), nullable=False)
 
-    reactions = relationship('PlaceReactionModel', back_populates='place', lazy='dynamic')
+    reactions = relationship('PlaceReactionModel', back_populates='place', lazy='noload')
     images = relationship('PlaceImageModel', back_populates='places', lazy='joined')
     types = relationship('PlaceTypeModel', back_populates='places', lazy='joined')
 
