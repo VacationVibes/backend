@@ -4,7 +4,7 @@ from src.auth.dependencies import CurrentUserDep
 from src.place import service
 from src.database import DBSessionDep
 
-from src.place.schemas import ReactionData, SuccessResponse, ReactionsList
+from src.place.schemas import ReactionData, SuccessResponse, ReactionsList, PlaceMin
 from src.schemas import PlaceScheme
 
 router = APIRouter()
@@ -39,7 +39,7 @@ async def reaction(
 
 @router.get(
     "/feed",
-    response_model=list[PlaceScheme]
+    response_model=list[PlaceMin]
 )
 async def reaction(
         user: CurrentUserDep,

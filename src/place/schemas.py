@@ -29,7 +29,7 @@ class PlaceReactionMin(BaseModel):
     created_at: datetime
 
 
-class UserReaction(BaseModel):
+class PlaceMin(BaseModel):
     id: uuid.UUID
     # place_id: str
     latitude: Decimal
@@ -42,4 +42,4 @@ class UserReaction(BaseModel):
 
 class ReactionsList(BaseModel):
     success: bool
-    reactions: list[UserReaction]
+    reactions: list[PlaceMin]

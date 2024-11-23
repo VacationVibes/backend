@@ -1,10 +1,11 @@
 from sqlalchemy import select, desc, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import selectinload
 
 from src.models import PlaceReactionModel, UserModel, PlaceModel, PlaceImageModel, PlaceTypeModel
 from src.place.exceptions import InvalidPlaceException
-from src.place.schemas import ReactionData, UserReaction, PlaceImageMin, PlaceTypeMin, PlaceReactionMin
+from src.place.schemas import ReactionData, PlaceMin, PlaceImageMin, PlaceTypeMin, PlaceReactionMin
 from src.schemas import PlaceScheme, PlaceReactionScheme, PlaceImageScheme, PlaceTypeScheme
 
 
@@ -22,7 +23,7 @@ async def add_reaction(db_session: AsyncSession, reaction_data: ReactionData, us
         raise InvalidPlaceException()
 
 
-async def get_user_reactions(db_session: AsyncSession, user: UserModel, offset: int, limit: int) -> list[UserReaction]:
+async def get_user_reactions(db_session: AsyncSession, user: UserModel, offset: int, limit: int) -> list[PlaceMin]:
     # SELECT place, place_reaction,
     #        array_agg(DISTINCT place_image) AS place_images,
     #        array_agg(DISTINCT place_type) AS place_types
@@ -56,7 +57,7 @@ async def get_user_reactions(db_session: AsyncSession, user: UserModel, offset: 
     places = result.fetchall()
 
     return [
-        UserReaction(
+        PlaceMin(
             id=place[0].id,
             # place_id=place[0].place_id,
             latitude=place[0].latitude,
@@ -92,6 +93,10 @@ async def get_user_feed(db_session: AsyncSession, user: UserModel) -> list[Place
 
     query = (
         select(PlaceModel)
+        .options(
+            selectinload(PlaceModel.images),
+            selectinload(PlaceModel.types)
+        )
         .filter(~PlaceModel.reactions.any(PlaceReactionModel.user_id == user.id))
         .limit(10)
     )
