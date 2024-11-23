@@ -49,14 +49,14 @@ async def get_user_by_id(db_session: AsyncSession, user_id: uuid.UUID) -> UserSc
     user = (await db_session.scalars(select(UserModel).where(UserModel.id == user_id))).first()
     if not user:
         raise UserDoesntExist()
-    return user
+    return UserSchemeDetailed.model_validate(user)
 
 
 async def get_user_by_email(db_session: AsyncSession, user_email: str) -> UserSchemeDetailed:
     user = (await db_session.scalars(select(UserModel).where(UserModel.email == user_email))).first()
     if not user:
         raise UserDoesntExist()
-    return user
+    return UserSchemeDetailed.model_validate(user)
 
 
 def create_access_token(user_id: uuid.UUID, expiry_time: int = config.JWT_EXPIRY_TIME) -> str:
@@ -92,4 +92,4 @@ async def create_user(db_session: AsyncSession, register_data: RegisterData) -> 
     db_session.add(db_user)
     await db_session.commit()
     await db_session.refresh(db_user)
-    return db_user
+    return UserSchemeDetailed.model_validate(db_user)

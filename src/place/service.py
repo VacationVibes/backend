@@ -2,13 +2,12 @@ from sqlalchemy import select, desc
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError
 
-from src.models import PlaceReactionModel
+from src.models import PlaceReactionModel, UserModel
 from src.place.exceptions import InvalidPlaceException
 from src.place.schemas import ReactionData, PlaceReactionScheme
-from src.schemas import UserScheme
 
 
-async def add_reaction(db_session: AsyncSession, reaction_data: ReactionData, user: UserScheme) -> None:
+async def add_reaction(db_session: AsyncSession, reaction_data: ReactionData, user: UserModel) -> None:
     db_reaction = PlaceReactionModel(
         place_id=reaction_data.place_id,
         user_id=user.id,
@@ -22,7 +21,7 @@ async def add_reaction(db_session: AsyncSession, reaction_data: ReactionData, us
         raise InvalidPlaceException()
 
 
-async def get_user_reactions(db_session: AsyncSession, user: UserScheme, offset: int, limit: int) -> list[
+async def get_user_reactions(db_session: AsyncSession, user: UserModel, offset: int, limit: int) -> list[
     PlaceReactionScheme]:
     query = (
         select(PlaceReactionModel)
@@ -34,4 +33,4 @@ async def get_user_reactions(db_session: AsyncSession, user: UserScheme, offset:
 
     result = await db_session.execute(query)
     places = result.scalars().all()
-    return places
+    return [PlaceReactionScheme.model_validate(place) for place in places]
