@@ -31,7 +31,7 @@ class PlaceReactionMin(BaseModel):
 
 class UserReaction(BaseModel):
     id: uuid.UUID
-    place_id: str
+    # place_id: str
     latitude: Decimal
     longitude: Decimal
     created_at: datetime
