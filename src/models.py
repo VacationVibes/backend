@@ -14,7 +14,7 @@ class UserModel(Base):
     email = Column(String, unique=True)
     password = Column(String)  # bcrypt hash
 
-    reactions = relationship('PlaceReactionModel', back_populates='user', lazy='dynamic')
+    reactions = relationship('PlaceReactionModel', back_populates='user')
 
     def __repr__(self):
         return f"<UserModel(id='{self.id}', name='{self.name}', email='{self.email}')>"
@@ -26,7 +26,7 @@ class PlaceTypeModel(Base):
     type = Column(String, nullable=False)
     created_at = Column(TIMESTAMP, server_default=func.now(), nullable=False)
 
-    places = relationship('PlaceModel', back_populates='types', lazy='joined')
+    places = relationship('PlaceModel', back_populates='types')
 
     __table_args__ = (
         PrimaryKeyConstraint('place_id', 'type'),
@@ -39,7 +39,7 @@ class PlaceImageModel(Base):
     image_url = Column(String, nullable=False)
     created_at = Column(TIMESTAMP, server_default=func.now(), nullable=False)
 
-    places = relationship('PlaceModel', back_populates='images', lazy='joined')
+    places = relationship('PlaceModel', back_populates='images')
 
     __table_args__ = (
         PrimaryKeyConstraint('place_id', 'image_url'),
@@ -57,8 +57,8 @@ class PlaceModel(Base):
     created_at = Column(TIMESTAMP, server_default=func.now(), nullable=False)
 
     reactions = relationship('PlaceReactionModel', back_populates='place', lazy='noload')
-    images = relationship('PlaceImageModel', back_populates='places', lazy='joined')
-    types = relationship('PlaceTypeModel', back_populates='places', lazy='joined')
+    images = relationship('PlaceImageModel', back_populates='places')
+    types = relationship('PlaceTypeModel', back_populates='places')
 
     def __repr__(self):
         return f"<PlaceModel(id='{self.id}', place_id='{self.place_id}', latitude='{self.latitude}', longitude='{self.longitude}', created_at='{self.created_at}')>"
@@ -73,8 +73,8 @@ class PlaceReactionModel(Base):
     reaction = Column(String)
     created_at = Column(TIMESTAMP, server_default=func.now(), nullable=False)
 
-    place = relationship('PlaceModel', back_populates='reactions', lazy='joined')
-    user = relationship('UserModel', back_populates='reactions', lazy='joined')
+    place = relationship('PlaceModel', back_populates='reactions')
+    user = relationship('UserModel', back_populates='reactions')
 
     __table_args__ = (
         CheckConstraint(reaction.in_(['like', 'dislike']), name='reaction_check'),
