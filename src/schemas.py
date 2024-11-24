@@ -51,6 +51,7 @@ class PlaceReactionScheme(BaseModel):
 
 class PlaceScheme(BaseModel):
     id: uuid.UUID
+    name: str
     place_id: str
     latitude: Decimal
     longitude: Decimal

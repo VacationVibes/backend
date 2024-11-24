@@ -31,6 +31,7 @@ class PlaceReactionMin(BaseModel):
 
 class PlaceMin(BaseModel):
     id: uuid.UUID
+    name: str
     # place_id: str
     latitude: Decimal
     longitude: Decimal
