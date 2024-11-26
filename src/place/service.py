@@ -59,6 +59,7 @@ async def get_user_reactions(db_session: AsyncSession, user: UserModel, offset: 
     return [
         PlaceScheme(
             id=place[0].id,
+            name=place[0].name,
             place_id=place[0].place_id,
             latitude=place[0].latitude,
             longitude=place[0].longitude,
