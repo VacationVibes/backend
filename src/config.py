@@ -1,7 +1,12 @@
 import logging
+import os
 
 # database configuration
-DATABASE_URL = "postgresql+asyncpg://username:password@localhost/vacation-vibes"
+DATABASE_HOST = os.getenv("DATABASE_HOST", "localhost")
+DATABASE_USERNAME = os.getenv("DATABASE_USERNAME", "username")
+DATABASE_PASSWORD = os.getenv("DATABASE_PASSWORD")
+DATABASE_NAME = os.getenv("DATABASE_NAME", "vacation-vibes")
+DATABASE_URL = f"postgresql+asyncpg://{DATABASE_USERNAME}:{DATABASE_PASSWORD}@{DATABASE_HOST}/{DATABASE_NAME}"
 
 # JWT configuration
 SECRET_KEY = "supersecretkey"

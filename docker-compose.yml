@@ -5,9 +5,9 @@ services:
     image: postgres:latest
     restart: always
     environment:
-      POSTGRES_USER: username
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: vacation-vibes
+      POSTGRES_USER: ${DATABASE_USERNAME:-username}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
+      POSTGRES_DB: ${DATABASE_NAME:-vacation-vibes}
     ports:
       - "5432:5432"
     volumes:
