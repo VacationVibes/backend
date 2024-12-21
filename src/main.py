@@ -22,4 +22,4 @@ if __name__ == "__main__":
     import uvicorn
 
     # todo use uvloop for NOT windows
-    uvicorn.run(app, host="0.0.0.0", port=80)
+    uvicorn.run(app, host="0.0.0.0", port=8080)
