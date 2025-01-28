@@ -8,6 +8,7 @@ from pydantic import BaseModel, EmailStr
 class UserScheme(BaseModel):
     id: uuid.UUID
     email: EmailStr
+    name: str
 
     class Config:
         from_attributes = True
@@ -15,6 +16,7 @@ class UserScheme(BaseModel):
 
 class UserSchemeDetailed(BaseModel):
     id: uuid.UUID
+    name: str
     email: EmailStr
     password: str
 
