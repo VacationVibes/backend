@@ -57,7 +57,7 @@ class PlaceModel(Base):
     created_at = Column(TIMESTAMP, server_default=func.now(), nullable=False)
 
     reactions = relationship('PlaceReactionModel', back_populates='place', lazy='noload')
-    images = relationship('PlaceImageModel', back_populates='places')
+    images = relationship('PlaceImageModel', back_populates='places', order_by='PlaceImageModel.image_url')
     types = relationship('PlaceTypeModel', back_populates='places')
 
     def __repr__(self):
