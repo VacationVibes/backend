@@ -41,7 +41,7 @@ async def reaction(
     "/feed",
     response_model=list[PlaceMin]
 )
-async def reaction(
+async def feed(
         user: CurrentUserDep,
         db_session: DBSessionDep
 ) -> list[PlaceScheme]:
