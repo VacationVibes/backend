@@ -1,3 +1,5 @@
+import uuid
+
 from fastapi import APIRouter, Query
 
 from src.auth.dependencies import CurrentUserDep
@@ -43,7 +45,8 @@ async def reaction(
 )
 async def feed(
         user: CurrentUserDep,
-        db_session: DBSessionDep
+        db_session: DBSessionDep,
+        ignore_ids: list[uuid.UUID] = Query([]),
 ) -> list[PlaceScheme]:
-    feed = await service.get_user_feed(db_session, user)
+    feed = await service.get_user_feed(db_session, user, ignore_ids)
     return feed
