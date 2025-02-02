@@ -34,11 +34,13 @@ async def get_user_reactions(db_session: AsyncSession, user: UserModel, offset: 
                 select(
                     func.row(PlaceImageModel.place_id, PlaceImageModel.image_url, PlaceImageModel.created_at)
                 ).where(PlaceImageModel.place_id == PlaceModel.id)
+                .scalar_subquery()
             ).label("images"),
             func.array(
                 select(
                     func.row(PlaceTypeModel.place_id, PlaceTypeModel.type, PlaceTypeModel.created_at)
                 ).where(PlaceTypeModel.place_id == PlaceModel.id)
+                .scalar_subquery()
             ).label("types")
         )
         .join(PlaceReactionModel)
