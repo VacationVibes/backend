@@ -1,3 +1,5 @@
+import uuid
+
 from sqlalchemy import select, desc, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError
@@ -152,7 +154,7 @@ async def get_user_reactions(db_session: AsyncSession, user: UserModel, offset: 
 #         for place in places
 #     ]
 
-async def get_user_feed(db_session: AsyncSession, user: UserModel, ignore_ids: list[str]) -> list[PlaceScheme]:
+async def get_user_feed(db_session: AsyncSession, user: UserModel, ignore_ids: list[uuid.UUID]) -> list[PlaceScheme]:
     # todo implement collaborative filtering
 
     query = (
