@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-
+import argon2
 import jwt
 import uuid
 from fastapi import Depends
@@ -39,9 +39,11 @@ async def user_exists(db_session: AsyncSession, email: str) -> bool:
 
 async def validate_user(db_session: AsyncSession, email: str, password: str) -> str:
     user = await get_user_by_email(db_session, email)
-    if verify_password(password, user.password):
-        return create_access_token(user.id)
-    else:
+    try:
+        if verify_password(password, user.password):
+            return create_access_token(user.id)
+
+    except (argon2.exceptions.VerifyMismatchError, argon2.exceptions.VerificationError, argon2.exceptions.InvalidHashError):
         raise InvalidPassword()
 
 
