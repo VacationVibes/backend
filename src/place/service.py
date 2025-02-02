@@ -28,18 +28,21 @@ async def get_user_reactions(db_session: AsyncSession, user: UserModel, offset: 
         select(
             PlaceModel,
             PlaceReactionModel,
-            func.array_agg(
-                func.distinct(PlaceImageModel.place_id, PlaceImageModel.image_url, PlaceImageModel.created_at)),
-            func.array_agg(
-                func.distinct(PlaceTypeModel.place_id, PlaceTypeModel.type, PlaceTypeModel.created_at))
+            func.array(
+                select(
+                    func.row(PlaceImageModel.place_id, PlaceImageModel.image_url, PlaceImageModel.created_at)
+                ).where(PlaceImageModel.place_id == PlaceModel.id)
+            ).label("images"),
+            func.array(
+                select(
+                    func.row(PlaceTypeModel.place_id, PlaceTypeModel.type, PlaceTypeModel.created_at)
+                ).where(PlaceTypeModel.place_id == PlaceModel.id)
+            ).label("types")
         )
         .join(PlaceReactionModel)
-        .join(PlaceImageModel)
-        .join(PlaceTypeModel)
         .offset(offset)
         .limit(limit)
         .filter(PlaceReactionModel.user_id == user.id)
-        .group_by(PlaceModel.id, PlaceReactionModel.id)
         .order_by(desc(PlaceReactionModel.created_at))
     )
 
