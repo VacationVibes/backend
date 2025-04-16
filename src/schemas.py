@@ -5,6 +5,14 @@ import uuid
 from pydantic import BaseModel, EmailStr, condecimal, constr
 
 
+class UserMiniScheme(BaseModel):
+    id: uuid.UUID
+    name: str
+
+    class Config:
+        from_attributes = True
+
+
 class UserScheme(BaseModel):
     id: uuid.UUID
     email: EmailStr
@@ -69,7 +77,7 @@ class PlaceScheme(BaseModel):
 class PlaceComment(BaseModel):
     id: uuid.UUID
     place_id: uuid.UUID
-    user_id: uuid.UUID
+    user: UserMiniScheme
     comment: constr(max_length=16384)
     rating: condecimal(ge=0, le=5)
 

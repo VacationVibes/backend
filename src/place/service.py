@@ -179,14 +179,15 @@ async def get_user_feed(db_session: AsyncSession, user: UserModel, ignore_ids: l
 async def get_comments(db_session: AsyncSession, place_id: uuid.UUID) -> list[PlaceComment]:
     query = (
         select(PlaceCommentModel)
+        .options(selectinload(PlaceCommentModel.user))  # тянем user
         .where(PlaceCommentModel.place_id == place_id)
         .order_by(desc(PlaceCommentModel.created_at))
         .limit(10)
     )
 
     result = await db_session.execute(query)
-    places = result.unique().scalars().all()
-    return [PlaceComment.model_validate(place) for place in places]
+    comments = result.unique().scalars().all()
+    return [PlaceComment.model_validate(comment) for comment in comments]
 
 
 async def add_comment(db_session: AsyncSession, user_id: uuid.UUID, comment: PlaceCommentSchema) -> PlaceComment:
