@@ -80,6 +80,7 @@ class PlaceComment(BaseModel):
     user: UserMiniScheme
     comment: constr(max_length=16384)
     rating: float
+    created_at: datetime
 
     class Config:
         from_attributes = True
