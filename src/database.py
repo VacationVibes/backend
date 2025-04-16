@@ -65,7 +65,7 @@ class DatabaseSessionManager:
 
 
 # todo change echo
-sessionmanager = DatabaseSessionManager(config.DATABASE_URL, {"echo": True})
+sessionmanager = DatabaseSessionManager(config.DATABASE_URL, {"echo": False})
 
 
 async def get_db_session():
