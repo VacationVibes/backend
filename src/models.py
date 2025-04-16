@@ -94,7 +94,7 @@ class PlaceCommentModel(Base):
     user_id = Column(UUID(as_uuid=True), ForeignKey('user.id', ondelete='CASCADE'), nullable=False)
     comment = Column(String(16384))
     rating = Column(DECIMAL(3, 2), nullable=True)
-    created_at = Column(TIMESTAMP, server_default=func.now(), nullable=False)
+    created_at = Column(TIMESTAMP(timezone=True), server_default=func.now(), nullable=False)
 
     place = relationship('PlaceModel', back_populates='comments')
     user = relationship('UserModel', back_populates='comments')
