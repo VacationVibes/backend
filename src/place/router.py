@@ -2,7 +2,7 @@ import uuid
 
 import sqlalchemy
 from fastapi import APIRouter, Query, HTTPException
-from starlette.status import HTTP_400_BAD_REQUEST
+from starlette.status import HTTP_400_BAD_REQUEST, HTTP_204_NO_CONTENT
 
 from src.auth.dependencies import CurrentUserDep
 from src.place import service
@@ -68,15 +68,15 @@ async def comments(
 
 @router.post(
     "/comment",
-    response_model=PlaceComment
+    status_code=HTTP_204_NO_CONTENT
 )
 async def comment(
         user: CurrentUserDep,
         db_session: DBSessionDep,
         comment: PlaceCommentSchema,
-) -> PlaceComment:
+) -> None:
     try:
-        return await service.add_comment(db_session, user.id, comment)
+        await service.add_comment(db_session, user.id, comment)
     except ValueError as e:
         raise HTTPException(
             status_code=HTTP_400_BAD_REQUEST,

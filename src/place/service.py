@@ -1,3 +1,4 @@
+import traceback
 import uuid
 
 from sqlalchemy import select, desc, func
@@ -190,7 +191,7 @@ async def get_comments(db_session: AsyncSession, place_id: uuid.UUID) -> list[Pl
     return [PlaceComment.model_validate(comment) for comment in comments]
 
 
-async def add_comment(db_session: AsyncSession, user_id: uuid.UUID, comment: PlaceCommentSchema) -> PlaceComment:
+async def add_comment(db_session: AsyncSession, user_id: uuid.UUID, comment: PlaceCommentSchema) -> None:
     new_comment = PlaceCommentModel(
         place_id=comment.place_id,
         user_id=user_id,
@@ -203,5 +204,3 @@ async def add_comment(db_session: AsyncSession, user_id: uuid.UUID, comment: Pla
         await db_session.commit()
     except IntegrityError:
         raise ValueError("Error inserting the comment")
-
-    return PlaceComment.model_validate(new_comment)
