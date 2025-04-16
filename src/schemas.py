@@ -79,7 +79,7 @@ class PlaceComment(BaseModel):
     place_id: uuid.UUID
     user: UserMiniScheme
     comment: constr(max_length=16384)
-    rating: condecimal(ge=0, le=5)
+    rating: float
 
     class Config:
         from_attributes = True

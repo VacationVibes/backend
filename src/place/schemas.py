@@ -49,4 +49,4 @@ class ReactionsList(BaseModel):
 class PlaceCommentSchema(BaseModel):
     place_id: uuid.UUID
     comment: constr(max_length=16384)
-    rating: condecimal(ge=0, le=5)
+    rating: condecimal(ge=0, le=5, max_digits=3, decimal_places=2)
