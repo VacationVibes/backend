@@ -5,10 +5,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import selectinload
 
-from src.models import PlaceReactionModel, UserModel, PlaceModel, PlaceImageModel, PlaceTypeModel
+from src.models import PlaceReactionModel, UserModel, PlaceModel, PlaceImageModel, PlaceTypeModel, PlaceCommentModel
 from src.place.exceptions import InvalidPlaceException
-from src.place.schemas import ReactionData, PlaceMin, PlaceImageMin, PlaceTypeMin, PlaceReactionMin
-from src.schemas import PlaceScheme, PlaceReactionScheme, PlaceImageScheme, PlaceTypeScheme
+from src.place.schemas import ReactionData, PlaceMin, PlaceImageMin, PlaceTypeMin, PlaceReactionMin, PlaceCommentSchema
+from src.schemas import PlaceScheme, PlaceReactionScheme, PlaceImageScheme, PlaceTypeScheme, PlaceComment
 
 
 async def add_reaction(db_session: AsyncSession, reaction_data: ReactionData, user: UserModel) -> None:
@@ -174,3 +174,33 @@ async def get_user_feed(db_session: AsyncSession, user: UserModel, ignore_ids: l
     places = result.unique().scalars().all()
     return [PlaceScheme.model_validate(place) for place in places]
     # return [PlaceScheme.model_validate({**place.__dict__, 'reactions': None}) for place in places]
+
+
+async def get_comments(db_session: AsyncSession, place_id: uuid.UUID) -> list[PlaceComment]:
+    query = (
+        select(PlaceCommentModel)
+        .where(PlaceCommentModel.place_id == place_id)
+        .order_by(desc(PlaceCommentModel.created_at))
+        .limit(10)
+    )
+
+    result = await db_session.execute(query)
+    places = result.unique().scalars().all()
+    return [PlaceComment.model_validate(place) for place in places]
+
+
+async def add_comment(db_session: AsyncSession, user_id: uuid.UUID, comment: PlaceCommentSchema) -> PlaceComment:
+    new_comment = PlaceCommentModel(
+        place_id=comment.place_id,
+        user_id=user_id,
+        comment=comment.comment,
+        rating=comment.rating
+    )
+
+    db_session.add(new_comment)
+    try:
+        await db_session.commit()
+    except IntegrityError:
+        raise ValueError("Error inserting the comment")
+
+    return PlaceComment.model_validate(new_comment)

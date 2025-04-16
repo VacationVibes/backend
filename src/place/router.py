@@ -1,13 +1,15 @@
 import uuid
 
-from fastapi import APIRouter, Query
+import sqlalchemy
+from fastapi import APIRouter, Query, HTTPException
+from starlette.status import HTTP_400_BAD_REQUEST
 
 from src.auth.dependencies import CurrentUserDep
 from src.place import service
 from src.database import DBSessionDep
 
-from src.place.schemas import ReactionData, SuccessResponse, ReactionsList, PlaceMin
-from src.schemas import PlaceScheme
+from src.place.schemas import ReactionData, SuccessResponse, ReactionsList, PlaceMin, PlaceCommentSchema
+from src.schemas import PlaceScheme, PlaceComment
 
 router = APIRouter()
 
@@ -50,3 +52,33 @@ async def feed(
 ) -> list[PlaceScheme]:
     feed = await service.get_user_feed(db_session, user, ignore_ids)
     return feed
+
+
+@router.get(
+    "/comments",
+    response_model=list[PlaceComment]
+)
+async def comments(
+        user: CurrentUserDep,
+        db_session: DBSessionDep,
+        place_id: uuid.UUID = Query(),
+) -> list[PlaceComment]:
+    return await service.get_comments(db_session, place_id)
+
+
+@router.post(
+    "/comment",
+    response_model=PlaceComment
+)
+async def comment(
+        user: CurrentUserDep,
+        db_session: DBSessionDep,
+        comment: PlaceCommentSchema,
+) -> PlaceComment:
+    try:
+        return await service.add_comment(db_session, user.id, comment)
+    except ValueError as e:
+        raise HTTPException(
+            status_code=HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )

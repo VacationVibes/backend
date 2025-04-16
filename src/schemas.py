@@ -2,7 +2,7 @@ from decimal import Decimal
 from typing import Literal, Optional
 from datetime import datetime
 import uuid
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, condecimal, constr
 
 
 class UserScheme(BaseModel):
@@ -61,6 +61,17 @@ class PlaceScheme(BaseModel):
     types: list[PlaceTypeScheme] = []
     images: list[PlaceImageScheme] = []
     reactions: Optional[list[PlaceReactionScheme]] = []  # not always loaded
+
+    class Config:
+        from_attributes = True
+
+
+class PlaceComment(BaseModel):
+    id: uuid.UUID
+    place_id: uuid.UUID
+    user_id: uuid.UUID
+    comment: constr(max_length=16384)
+    rating: condecimal(ge=0, le=5)
 
     class Config:
         from_attributes = True

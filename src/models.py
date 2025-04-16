@@ -15,6 +15,7 @@ class UserModel(Base):
     password = Column(String)  # bcrypt hash
 
     reactions = relationship('PlaceReactionModel', back_populates='user')
+    comments = relationship('PlaceCommentModel', back_populates='user')
 
     def __repr__(self):
         return f"<UserModel(id='{self.id}', name='{self.name}', email='{self.email}')>"
@@ -59,6 +60,7 @@ class PlaceModel(Base):
     reactions = relationship('PlaceReactionModel', back_populates='place', lazy='noload')
     images = relationship('PlaceImageModel', back_populates='places', order_by='PlaceImageModel.image_url')
     types = relationship('PlaceTypeModel', back_populates='places')
+    comments = relationship('PlaceCommentModel', back_populates='place', order_by='PlaceCommentModel.created_at')
 
     def __repr__(self):
         return f"<PlaceModel(id='{self.id}', place_id='{self.place_id}', latitude='{self.latitude}', longitude='{self.longitude}', created_at='{self.created_at}')>"
@@ -82,3 +84,20 @@ class PlaceReactionModel(Base):
 
     def __repr__(self):
         return f"<PlaceReactionModel(id='{self.id}', place_id='{self.place_id}', reaction='{self.reaction}', created_at='{self.created_at}')>"
+
+
+class PlaceCommentModel(Base):
+    __tablename__ = 'place_comment'
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    place_id = Column(UUID(as_uuid=True), ForeignKey('place.id', ondelete='CASCADE'), nullable=False)
+    user_id = Column(UUID(as_uuid=True), ForeignKey('user.id', ondelete='CASCADE'), nullable=False)
+    comment = Column(String(16384))
+    rating = Column(DECIMAL(3, 2), nullable=True)
+    created_at = Column(TIMESTAMP, server_default=func.now(), nullable=False)
+
+    place = relationship('PlaceModel', back_populates='comments')
+    user = relationship('UserModel', back_populates='comments')
+
+    def __repr__(self):
+        return f"<PlaceCommentModel(id='{self.id}', place_id='{self.place_id}', comment='{self.comment}', created_at='{self.created_at}')>"

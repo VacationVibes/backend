@@ -3,7 +3,7 @@ from datetime import datetime
 from decimal import Decimal
 from typing import Literal, Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, constr, condecimal
 
 
 class ReactionData(BaseModel):
@@ -44,3 +44,9 @@ class PlaceMin(BaseModel):
 class ReactionsList(BaseModel):
     success: bool
     reactions: list[PlaceMin]
+
+
+class PlaceCommentSchema(BaseModel):
+    place_id: uuid.UUID
+    comment: constr(max_length=16384)
+    rating: condecimal(ge=0, le=5)
