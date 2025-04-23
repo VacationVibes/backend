@@ -17,6 +17,8 @@ class UserScheme(BaseModel):
     id: uuid.UUID
     email: EmailStr
     name: str
+    likes: int
+    dislikes: int
 
     class Config:
         from_attributes = True
@@ -27,6 +29,8 @@ class UserSchemeDetailed(BaseModel):
     name: str
     email: EmailStr
     password: str
+    likes: int | None = None
+    dislikes: int | None = None
 
     class Config:
         from_attributes = True

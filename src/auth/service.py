@@ -4,7 +4,7 @@ import jwt
 import uuid
 from fastapi import Depends
 from fastapi.security import OAuth2PasswordBearer
-from sqlalchemy import select
+from sqlalchemy import select, case, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from src import config
 from argon2 import PasswordHasher
@@ -12,7 +12,7 @@ from src.auth.exceptions import UserDoesntExist, InvalidPassword
 from src.auth.schemas import RegisterData
 from src.database import get_db_session
 from src.exceptions import InvalidCredentials, TokenExpired
-from src.models import UserModel
+from src.models import UserModel, PlaceReactionModel
 from typing import Annotated
 
 from src.schemas import UserSchemeDetailed
@@ -48,18 +48,57 @@ async def validate_user(db_session: AsyncSession, email: str, password: str) -> 
 
 
 async def get_user_by_id(db_session: AsyncSession, user_id: uuid.UUID) -> UserSchemeDetailed:
-    user = (await db_session.scalars(select(UserModel).where(UserModel.id == user_id))).first()
-    if not user:
+    query = (
+        select(
+            UserModel,
+            func.count(case((PlaceReactionModel.reaction == 'like', 1), else_=None)).label('likes'),
+            func.count(case((PlaceReactionModel.reaction == 'dislike', 1), else_=None)).label('dislikes')
+        )
+        .outerjoin(PlaceReactionModel, UserModel.id == PlaceReactionModel.user_id)
+        .where(UserModel.id == user_id)
+        .group_by(UserModel.id)
+    )
+
+    result = await db_session.execute(query)
+    row = result.first()
+
+    if not row:
         raise UserDoesntExist()
-    return UserSchemeDetailed.model_validate(user)
+
+    user, likes, dislikes = row
+
+    user_data = UserSchemeDetailed.model_validate(user)
+    user_data.likes = likes
+    user_data.dislikes = dislikes
+
+    return user_data
 
 
 async def get_user_by_email(db_session: AsyncSession, user_email: str) -> UserSchemeDetailed:
-    user = (await db_session.scalars(select(UserModel).where(UserModel.email == user_email))).first()
-    if not user:
-        raise UserDoesntExist()
-    return UserSchemeDetailed.model_validate(user)
+    query = (
+        select(
+            UserModel,
+            func.count(case((PlaceReactionModel.reaction == 'like', 1), else_=None)).label('likes'),
+            func.count(case((PlaceReactionModel.reaction == 'dislike', 1), else_=None)).label('dislikes')
+        )
+        .outerjoin(PlaceReactionModel, UserModel.id == PlaceReactionModel.user_id)
+        .where(UserModel.email == user_email)
+        .group_by(UserModel.id)
+    )
 
+    result = await db_session.execute(query)
+    row = result.first()
+
+    if not row:
+        raise UserDoesntExist()
+
+    user, likes, dislikes = row
+
+    user_data = UserSchemeDetailed.model_validate(user)
+    user_data.likes = likes
+    user_data.dislikes = dislikes
+
+    return user_data
 
 def create_access_token(user_id: uuid.UUID, expiry_time: int = config.JWT_EXPIRY_TIME) -> str:
     to_encode = {"sub": str(user_id)}
