@@ -1,7 +1,7 @@
 import traceback
 import uuid
 
-from sqlalchemy import select, desc, func
+from sqlalchemy import select, desc, func, case, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import selectinload
@@ -158,23 +158,75 @@ async def get_user_reactions(db_session: AsyncSession, user: UserModel, offset: 
 #     ]
 
 async def get_user_feed(db_session: AsyncSession, user: UserModel, ignore_ids: list[uuid.UUID]) -> list[PlaceScheme]:
-    # todo implement collaborative filtering
-
-    query = (
-        select(PlaceModel)
-        .options(
-            selectinload(PlaceModel.images),
-            selectinload(PlaceModel.types)
-        )
-        .filter(~PlaceModel.reactions.any(PlaceReactionModel.user_id == user.id))
-        .filter(~PlaceModel.id.in_(ignore_ids))
-        .limit(10)
+    # count amount of reactions
+    count_query = (
+        select(func.count())
+        .select_from(PlaceReactionModel)
+        .filter(PlaceReactionModel.user_id == user.id)
     )
+    count_result = await db_session.execute(count_query)
+    reaction_count = count_result.scalar()
+
+    # if less than 50 - show to user something he hasn't seen yet
+    if reaction_count < 50:
+        query = (
+            select(PlaceModel)
+            .options(
+                selectinload(PlaceModel.images),
+                selectinload(PlaceModel.types)
+            )
+            .filter(~PlaceModel.reactions.any(PlaceReactionModel.user_id == user.id))
+            .filter(~PlaceModel.id.in_(ignore_ids))
+            .order_by(PlaceModel.rating.desc().nullslast())  # optional
+            .limit(10)
+        )
+    else:
+        # otherwise recommend to user based on his preferences (like +1, dislike -0.5)
+        COMMON_TYPES = {"establishment", "point_of_interest", "tourist_attraction"}  # every place has this types
+        weighted_types_query = (
+            select(
+                PlaceTypeModel.type,
+                func.sum(
+                    case(
+                        (PlaceReactionModel.reaction == 'like', 1),
+                        (PlaceReactionModel.reaction == 'dislike', -0.5),
+                        else_=0
+                    )
+                ).label('score')
+            )
+            .join(PlaceModel, PlaceTypeModel.place_id == PlaceModel.id)
+            .join(PlaceReactionModel, PlaceReactionModel.place_id == PlaceModel.id)
+            .where(
+                and_(
+                    PlaceReactionModel.user_id == user.id,
+                    ~PlaceTypeModel.type.in_(COMMON_TYPES)  # not include common types
+                )
+            )
+            .group_by(PlaceTypeModel.type)
+            .order_by(desc('score'))
+        )
+
+        result = await db_session.execute(weighted_types_query)
+        liked_types = [row[0] for row in result.all()]
+        top_types = list(set(liked_types))[:3]
+
+        query = (
+            select(PlaceModel)
+            .options(
+                selectinload(PlaceModel.images),
+                selectinload(PlaceModel.types)
+            )
+            .join(PlaceTypeModel)
+            .filter(PlaceTypeModel.type.in_(top_types))
+            .filter(~PlaceModel.reactions.any(PlaceReactionModel.user_id == user.id))
+            .filter(~PlaceModel.id.in_(ignore_ids))
+            .order_by(PlaceModel.rating.desc().nullslast())  # можно сортировать по рейтингу
+            .limit(10)
+        )
 
     result = await db_session.execute(query)
     places = result.unique().scalars().all()
     return [PlaceScheme.model_validate(place) for place in places]
-    # return [PlaceScheme.model_validate({**place.__dict__, 'reactions': None}) for place in places]
 
 
 async def get_comments(db_session: AsyncSession, place_id: uuid.UUID) -> list[PlaceComment]:
