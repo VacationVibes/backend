@@ -157,8 +157,12 @@ async def get_user_reactions(db_session: AsyncSession, user: UserModel, offset: 
 #         for place in places
 #     ]
 
+# Content-Based Recommendation System with TF-IDF Weighting
 async def get_user_feed(db_session: AsyncSession, user: UserModel, ignore_ids: list[uuid.UUID]) -> list[PlaceScheme]:
-    # count amount of reactions
+    # Ignore overly common types that don't provide meaningful differentiation
+    COMMON_TYPES = {"establishment", "point_of_interest", "tourist_attraction"}
+
+    # Count the number of user reactions
     count_query = (
         select(func.count())
         .select_from(PlaceReactionModel)
@@ -167,7 +171,7 @@ async def get_user_feed(db_session: AsyncSession, user: UserModel, ignore_ids: l
     count_result = await db_session.execute(count_query)
     reaction_count = count_result.scalar()
 
-    # if less than 50 - show to user something he hasn't seen yet
+    # For new users with fewer than 50 reactions - show them high-rated unrated places
     if reaction_count < 50:
         query = (
             select(PlaceModel)
@@ -176,14 +180,30 @@ async def get_user_feed(db_session: AsyncSession, user: UserModel, ignore_ids: l
                 selectinload(PlaceModel.types)
             )
             .filter(~PlaceModel.reactions.any(PlaceReactionModel.user_id == user.id))
-            .filter(~PlaceModel.id.in_(ignore_ids))
-            .order_by(PlaceModel.rating.desc().nullslast())  # optional
+            .filter(~PlaceModel.id.in_(ignore_ids) if ignore_ids else True)
+            .order_by(PlaceModel.rating.desc().nullslast())
             .limit(10)
         )
     else:
-        # otherwise recommend to user based on his preferences (like +1, dislike -0.5)
-        COMMON_TYPES = {"establishment", "point_of_interest", "tourist_attraction"}  # every place has this types
-        weighted_types_query = (
+        # Get the total number of places for IDF calculation
+        total_places_query = select(func.count()).select_from(PlaceModel)
+        total_places_result = await db_session.execute(total_places_query)
+        total_places = total_places_result.scalar()
+
+        # Get count of places for each type (excluding common types)
+        type_counts_query = (
+            select(
+                PlaceTypeModel.type,
+                func.count().label('type_count')
+            )
+            .group_by(PlaceTypeModel.type)
+            .filter(~PlaceTypeModel.type.in_(COMMON_TYPES))
+        )
+        type_counts_result = await db_session.execute(type_counts_query)
+        type_counts = {row[0]: row[1] for row in type_counts_result.all()}
+
+        # Get user preferences from their reactions
+        user_preferences_query = (
             select(
                 PlaceTypeModel.type,
                 func.sum(
@@ -192,42 +212,88 @@ async def get_user_feed(db_session: AsyncSession, user: UserModel, ignore_ids: l
                         (PlaceReactionModel.reaction == 'dislike', -0.5),
                         else_=0
                     )
-                ).label('score')
+                ).label('raw_score')
             )
             .join(PlaceModel, PlaceTypeModel.place_id == PlaceModel.id)
             .join(PlaceReactionModel, PlaceReactionModel.place_id == PlaceModel.id)
             .where(
                 and_(
                     PlaceReactionModel.user_id == user.id,
-                    ~PlaceTypeModel.type.in_(COMMON_TYPES)  # not include common types
+                    ~PlaceTypeModel.type.in_(COMMON_TYPES)  # Exclude common types
                 )
             )
             .group_by(PlaceTypeModel.type)
-            .order_by(desc('score'))
         )
 
-        result = await db_session.execute(weighted_types_query)
-        liked_types = [row[0] for row in result.all()]
-        top_types = list(set(liked_types))[:3]
+        user_preferences_result = await db_session.execute(user_preferences_query)
+        user_preferences = user_preferences_result.all()
 
-        query = (
-            select(PlaceModel)
-            .options(
-                selectinload(PlaceModel.images),
-                selectinload(PlaceModel.types)
+        # Calculate TF-IDF score for each type
+        type_scores = []
+        for type_name, raw_score in user_preferences:
+            if type_name in type_counts and type_counts[type_name] > 0:
+                # TF (term frequency) - how much the user likes this type
+                # IDF (inverse document frequency) - how rare/specific the type is
+                idf = math.log(total_places / type_counts[type_name])
+                tf_idf_score = raw_score * idf
+                type_scores.append((type_name, tf_idf_score))
+
+        # Sort types by TF-IDF score and take top 5 with positive scores
+        type_scores.sort(key=lambda x: x[1], reverse=True)
+        top_types = [t[0] for t in type_scores[:5] if t[1] > 0]
+
+        if not top_types:
+            # Fallback: If no relevant types found, show high-rated places
+            query = (
+                select(PlaceModel)
+                .options(
+                    selectinload(PlaceModel.images),
+                    selectinload(PlaceModel.types)
+                )
+                .filter(~PlaceModel.reactions.any(PlaceReactionModel.user_id == user.id))
+                .filter(~PlaceModel.id.in_(ignore_ids) if ignore_ids else True)
+                .order_by(PlaceModel.rating.desc().nullslast())
+                .limit(10)
             )
-            .join(PlaceTypeModel)
-            .filter(PlaceTypeModel.type.in_(top_types))
-            .filter(~PlaceModel.reactions.any(PlaceReactionModel.user_id == user.id))
-            .filter(~PlaceModel.id.in_(ignore_ids))
-            .order_by(PlaceModel.rating.desc().nullslast())  # можно сортировать по рейтингу
-            .limit(10)
-        )
+        else:
+            # Find places with relevant types
+            # Use CTE to calculate relevance score for each place
+            place_scores = (
+                select(
+                    PlaceTypeModel.place_id,
+                    func.sum(
+                        case(
+                            *[(PlaceTypeModel.type == t, type_scores[i][1])
+                              for i, t in enumerate(top_types) if i < len(type_scores)],
+                            else_=0
+                        )
+                    ).label('relevance_score')
+                )
+                .filter(PlaceTypeModel.type.in_(top_types))
+                .group_by(PlaceTypeModel.place_id)
+                .cte('place_scores')
+            )
+
+            # Final query: join with relevance scores and sort
+            query = (
+                select(PlaceModel)
+                .options(
+                    selectinload(PlaceModel.images),
+                    selectinload(PlaceModel.types)
+                )
+                .join(place_scores, PlaceModel.id == place_scores.c.place_id)
+                .filter(~PlaceModel.reactions.any(PlaceReactionModel.user_id == user.id))
+                .filter(~PlaceModel.id.in_(ignore_ids) if ignore_ids else True)
+                .order_by(
+                    place_scores.c.relevance_score.desc(),
+                    PlaceModel.rating.desc().nullslast()
+                )
+                .limit(10)
+            )
 
     result = await db_session.execute(query)
     places = result.unique().scalars().all()
     return [PlaceScheme.model_validate(place) for place in places]
-
 
 async def get_comments(db_session: AsyncSession, place_id: uuid.UUID) -> list[PlaceComment]:
     query = (
