@@ -29,7 +29,10 @@ def verify_password(plain_password, hashed_password) -> bool:
     """
     Verify if the provided plain text password matches the hashed password.
     """
-    return ph.verify(hashed_password, plain_password)
+    try:
+        return ph.verify(hashed_password, plain_password)
+    except (argon2.exceptions.VerifyMismatchError, argon2.exceptions.VerificationError, argon2.exceptions.InvalidHashError):
+        raise InvalidPassword()
 
 
 async def user_exists(db_session: AsyncSession, email: str) -> bool:
@@ -39,12 +42,8 @@ async def user_exists(db_session: AsyncSession, email: str) -> bool:
 
 async def validate_user(db_session: AsyncSession, email: str, password: str) -> str:
     user = await get_user_by_email(db_session, email)
-    try:
-        if verify_password(password, user.password):
-            return create_access_token(user.id)
-
-    except (argon2.exceptions.VerifyMismatchError, argon2.exceptions.VerificationError, argon2.exceptions.InvalidHashError):
-        raise InvalidPassword()
+    if verify_password(password, user.password):
+        return create_access_token(user.id)
 
 
 async def get_user_by_id(db_session: AsyncSession, user_id: uuid.UUID) -> UserSchemeDetailed:
