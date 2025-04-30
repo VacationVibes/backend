@@ -48,14 +48,14 @@ async def get_me(
 ) -> UserScheme:
     return user
 
+
 @router.patch(
     "/password"
 )
 async def get_me(
         password_data: PasswordData,
-        user: CurrentUserDep
+        user: CurrentUserDep,
+        db_session: DBSessionDep
 ) -> dict:
-    if not service.verify_password(password_data.current_password, user.password):
-        raise InvalidPassword
-
+    await service.update_password(db_session, user, password_data)
     return {"success": True}

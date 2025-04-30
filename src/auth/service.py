@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src import config
 from argon2 import PasswordHasher
 from src.auth.exceptions import UserDoesntExist, InvalidPassword
-from src.auth.schemas import RegisterData
+from src.auth.schemas import RegisterData, PasswordData
 from src.database import get_db_session
 from src.exceptions import InvalidCredentials, TokenExpired
 from src.models import UserModel, PlaceReactionModel
@@ -31,7 +31,9 @@ def verify_password(plain_password, hashed_password) -> bool:
     """
     try:
         return ph.verify(hashed_password, plain_password)
-    except (argon2.exceptions.VerifyMismatchError, argon2.exceptions.VerificationError, argon2.exceptions.InvalidHashError):
+    except (
+            argon2.exceptions.VerifyMismatchError, argon2.exceptions.VerificationError,
+            argon2.exceptions.InvalidHashError):
         raise InvalidPassword()
 
 
@@ -99,6 +101,7 @@ async def get_user_by_email(db_session: AsyncSession, user_email: str) -> UserSc
 
     return user_data
 
+
 def create_access_token(user_id: uuid.UUID, expiry_time: int = config.JWT_EXPIRY_TIME) -> str:
     to_encode = {"sub": str(user_id)}
     expire = datetime.now() + timedelta(minutes=expiry_time)
@@ -133,3 +136,15 @@ async def create_user(db_session: AsyncSession, register_data: RegisterData) -> 
     await db_session.commit()
     await db_session.refresh(db_user)
     return UserSchemeDetailed.model_validate(db_user)
+
+
+async def update_password(db_session: AsyncSession, user: UserModel, password_data: PasswordData) -> UserSchemeDetailed:
+    if not verify_password(password_data.current_password, user.password):
+        raise InvalidPassword()
+
+    user.password = ph.hash(password_data.new_password)
+    db_session.add(user)
+    await db_session.commit()
+    await db_session.refresh(user)
+
+    return UserSchemeDetailed.model_validate(user)
