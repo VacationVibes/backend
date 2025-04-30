@@ -1,8 +1,10 @@
+from typing import Dict
+
 from fastapi import APIRouter
 
 from src.auth.dependencies import CurrentUserDep
-from src.auth.schemas import RegisterData, LoginData, Token
-from src.auth.exceptions import UserAlreadyExists
+from src.auth.schemas import RegisterData, LoginData, Token, PasswordData
+from src.auth.exceptions import UserAlreadyExists, InvalidPassword
 from src.auth import service
 from src.database import DBSessionDep
 from src.schemas import UserScheme
@@ -45,3 +47,15 @@ async def get_me(
         user: CurrentUserDep
 ) -> UserScheme:
     return user
+
+@router.patch(
+    "/password"
+)
+async def get_me(
+        password_data: PasswordData,
+        user: CurrentUserDep
+) -> dict:
+    if not service.verify_password(password_data.current_password, user.password):
+        raise InvalidPassword
+
+    return {"success": True}

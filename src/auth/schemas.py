@@ -17,3 +17,8 @@ class RegisterData(BaseModel):
 class LoginData(BaseModel):
     email: EmailStr
     password: constr(min_length=6, max_length=511)
+
+
+class PasswordData(BaseModel):
+    current_password: constr(min_length=6, max_length=511)
+    new_password: constr(min_length=6, max_length=511)
