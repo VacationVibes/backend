@@ -4,7 +4,7 @@ import jwt
 import uuid
 from fastapi import Depends
 from fastapi.security import OAuth2PasswordBearer
-from sqlalchemy import select, case, func
+from sqlalchemy import select, case, func, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from src import config
 from argon2 import PasswordHasher
@@ -138,13 +138,18 @@ async def create_user(db_session: AsyncSession, register_data: RegisterData) -> 
     return UserSchemeDetailed.model_validate(db_user)
 
 
-async def update_password(db_session: AsyncSession, user: UserModel, password_data: PasswordData) -> UserSchemeDetailed:
+async def update_password(db_session: AsyncSession, user: UserSchemeDetailed, password_data: PasswordData) -> UserSchemeDetailed:
     if not verify_password(password_data.current_password, user.password):
         raise InvalidPassword()
 
-    user.password = ph.hash(password_data.new_password)
-    db_session.add(user)
+    new_hashed_password = ph.hash(password_data.new_password)
+    stmt = (
+        update(UserModel)
+        .where(UserModel.id == user.id)
+        .values(password=new_hashed_password)
+    )
+    await db_session.execute(stmt)
     await db_session.commit()
-    await db_session.refresh(user)
 
-    return UserSchemeDetailed.model_validate(user)
+    user.password = new_hashed_password
+    return user
