@@ -1,5 +1,4 @@
 import math
-import traceback
 import uuid
 
 from sqlalchemy import select, desc, func, case, and_
@@ -88,75 +87,6 @@ async def get_user_reactions(db_session: AsyncSession, user: UserModel, offset: 
         for place in places
     ]
 
-
-# async def get_user_reactions(db_session: AsyncSession, user: UserModel, offset: int, limit: int) -> list[PlaceScheme]:
-#     # 1. Запрашиваем только места и реакции пользователя (без JOIN-ов)
-#     query = (
-#         select(PlaceModel)
-#         .join(PlaceReactionModel)
-#         .filter(PlaceReactionModel.user_id == user.id)
-#         .options(selectinload(PlaceModel.reactions))
-#         .order_by(desc(PlaceReactionModel.created_at))
-#         .offset(offset)
-#         .limit(limit)
-#     )
-#
-#     result = await db_session.execute(query)
-#     places = result.scalars().all()  # Без fetchall() - работаем с объектами
-#
-#     # 2. Загружаем связанные данные отдельно
-#     place_ids = [place.id for place in places]
-#
-#     # 2.1 Загружаем изображения одним запросом
-#     images_query = select(PlaceImageModel).filter(PlaceImageModel.place_id.in_(place_ids))
-#     images_result = await db_session.execute(images_query)
-#     images = images_result.scalars().all()
-#
-#     # 2.2 Загружаем типы одним запросом
-#     types_query = select(PlaceTypeModel).filter(PlaceTypeModel.place_id.in_(place_ids))
-#     types_result = await db_session.execute(types_query)
-#     types = types_result.scalars().all()
-#
-#     # 3. Группируем связанные данные по place_id (оптимизируем доступ)
-#     images_by_place = {}
-#     for image in images:
-#         images_by_place.setdefault(image.place_id, []).append(image)
-#
-#     types_by_place = {}
-#     for type_ in types:
-#         types_by_place.setdefault(type_.place_id, []).append(type_)
-#
-#     # 4. Собираем ответ
-#     return [
-#         PlaceScheme(
-#             id=place.id,
-#             name=place.name,
-#             place_id=place.place_id,
-#             latitude=place.latitude,
-#             longitude=place.longitude,
-#             created_at=place.created_at,
-#             reactions=[PlaceReactionScheme(
-#                 id=reaction.id,
-#                 reaction=reaction.reaction,
-#                 created_at=reaction.created_at
-#             ) for reaction in place.reactions],
-#             images=[
-#                 PlaceImageScheme(
-#                     place_id=image.place_id,
-#                     image_url=image.image_url,
-#                     created_at=image.created_at
-#                 ) for image in images_by_place.get(place.id, [])
-#             ],
-#             types=[
-#                 PlaceTypeScheme(
-#                     place_id=type_.place_id,
-#                     type=type_.type,
-#                     created_at=type_.created_at
-#                 ) for type_ in types_by_place.get(place.id, [])
-#             ],
-#         )
-#         for place in places
-#     ]
 
 # Content-Based Recommendation System with TF-IDF Weighting
 async def get_user_feed(db_session: AsyncSession, user: UserModel, ignore_ids: list[uuid.UUID]) -> list[PlaceScheme]:
@@ -295,6 +225,7 @@ async def get_user_feed(db_session: AsyncSession, user: UserModel, ignore_ids: l
     result = await db_session.execute(query)
     places = result.unique().scalars().all()
     return [PlaceScheme.model_validate(place) for place in places]
+
 
 async def get_comments(db_session: AsyncSession, place_id: uuid.UUID) -> list[PlaceComment]:
     query = (
